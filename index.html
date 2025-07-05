@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音楽ファイル波形編集アプリ - 最適化版</title>
+    <title>音楽ファイル波形編集アプリ - 波形ズーム機能付き完全版</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -65,83 +65,41 @@
             box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
         }
 
-        .controls {
+        /* 作業履歴コントロール */
+        .history-controls {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
         }
 
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            color: white;
+        .history-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: rgba(255, 255, 255, 0.8);
             font-size: 14px;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-play {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
-        }
-
-        .btn-stop {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-        }
-
-        .btn-trim {
-            background: linear-gradient(45deg, #feca57, #ff9ff3);
-            box-shadow: 0 4px 15px rgba(254, 202, 87, 0.3);
-        }
-
-        .btn-clear {
-            background: linear-gradient(45deg, #a55eea, #26de81);
-            box-shadow: 0 4px 15px rgba(165, 94, 234, 0.3);
-        }
-
-        .btn-download {
-            background: linear-gradient(45deg, #fd79a8, #fdcb6e);
-            box-shadow: 0 4px 15px rgba(253, 121, 168, 0.3);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-
-        /* 最適化されたレイアウト */
-        .workspace {
+        /* メインワークスペース */
+        .main-workspace {
             display: grid;
-            grid-template-columns: 1fr 2fr;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
             margin-bottom: 30px;
+            height: 600px;
         }
 
+        /* 左パネル - トラック管理 */
         .left-panel {
             display: flex;
             flex-direction: column;
             gap: 20px;
-        }
-
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            overflow-y: auto;
         }
 
         .track-list {
@@ -177,10 +135,9 @@
             border-color: #4ecdc4;
         }
 
-        .track-item.dragging {
-            opacity: 0.5;
-            transform: rotate(2deg) scale(0.95);
-            cursor: grabbing;
+        .track-item.selected {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.2);
         }
 
         .track-info {
@@ -205,19 +162,179 @@
             gap: 8px;
         }
 
+        /* 右パネル - 波形編集エリア */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        /* 波形コンテナ */
+        .waveform-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
+        }
+
+        .waveform-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .waveform-title {
+            color: #4ecdc4;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .waveform-info {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* 波形コントロールバー */
+        .waveform-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .waveform-controls .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 12px;
+            min-width: 80px;
+        }
+
+        .waveform-controls .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .waveform-controls .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ズームコントロール専用スタイル */
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .zoom-controls .btn {
+            padding: 6px 12px;
+            min-width: 60px;
+            font-size: 11px;
+        }
+
+        .zoom-level {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .btn-zoom-in {
+            background: linear-gradient(45deg, #26de81, #20bf6b);
+            box-shadow: 0 2px 8px rgba(38, 222, 129, 0.3);
+        }
+
+        .btn-zoom-out {
+            background: linear-gradient(45deg, #fd79a8, #fdcb6e);
+            box-shadow: 0 2px 8px rgba(253, 121, 168, 0.3);
+        }
+
+        .btn-zoom-fit {
+            background: linear-gradient(45deg, #a55eea, #3742fa);
+            box-shadow: 0 2px 8px rgba(165, 94, 234, 0.3);
+        }
+
+        /* 波形キャンバス */
+        .waveform-canvas {
+            width: 100%;
+            height: 250px;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            cursor: crosshair;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 選択範囲情報 */
+        .selection-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .selection-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 8px;
+        }
+
+        .selection-detail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .selection-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .selection-value {
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+
+        /* タイムライン */
         .timeline-container {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 20px;
             backdrop-filter: blur(5px);
-            min-height: 300px;
+            height: 200px;
         }
 
         .timeline-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .timeline-header h3 {
@@ -234,7 +351,6 @@
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             padding: 15px;
-            margin-bottom: 15px;
             min-height: 100px;
             position: relative;
             border: 2px dashed transparent;
@@ -245,12 +361,6 @@
             border-color: #4ecdc4;
             background: rgba(78, 205, 196, 0.2);
             box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
-        }
-
-        .timeline-track h4 {
-            margin-bottom: 15px;
-            color: #fff;
-            font-size: 14px;
         }
 
         .timeline-clips {
@@ -278,136 +388,161 @@
             justify-content: center;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
-            border: 2px solid transparent;
         }
 
         .timeline-clip:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
         }
 
-        .timeline-clip.dragging {
-            opacity: 0.5;
-            transform: rotate(5deg);
-        }
-
-        .timeline-clip .remove-btn {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .timeline-clip:hover .remove-btn {
-            display: flex;
-        }
-
-        .timeline-clip .remove-btn:hover {
-            background: #e55555;
-            transform: scale(1.1);
-        }
-
-        .timeline-ruler {
-            background: rgba(255, 255, 255, 0.1);
-            height: 40px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .ruler-marks {
-            display: flex;
-            height: 100%;
-            align-items: end;
-            padding: 0 10px;
-        }
-
-        .ruler-mark {
-            border-left: 1px solid rgba(255, 255, 255, 0.3);
-            height: 15px;
-            flex: 1;
-            position: relative;
-        }
-
-        .ruler-mark:nth-child(5n) {
-            height: 25px;
-            border-left-color: rgba(255, 255, 255, 0.6);
-        }
-
-        .ruler-time {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .timeline-playhead {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: linear-gradient(to bottom, #ff6b6b, #ee5a52);
-            pointer-events: none;
-            z-index: 10;
-            border-radius: 2px;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-        }
-
-        .empty-timeline {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            font-style: italic;
-            padding: 20px;
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .waveform-container {
+        /* 出力セクション */
+        .output-section {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 20px;
-            margin-bottom: 30px;
             backdrop-filter: blur(5px);
+            margin-top: 20px;
         }
 
-        .waveform-canvas {
-            width: 100%;
-            height: 200px;
-            border-radius: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            cursor: crosshair;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .selection-info {
-            text-align: center;
-            margin-top: 15px;
-            padding: 12px;
+        .output-header h3 {
+            color: #4ecdc4;
+            font-size: 1.2em;
+        }
+
+        .format-selection {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .format-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .format-option.selected {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+
+        .format-option input[type="radio"] {
+            margin: 0;
+        }
+
+        .quality-settings {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .quality-settings label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .quality-settings select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* ボタンスタイル */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            color: white;
             font-size: 14px;
         }
 
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-accent {
+            background: linear-gradient(45deg, #feca57, #ff9ff3);
+            box-shadow: 0 4px 15px rgba(254, 202, 87, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #26de81, #20bf6b);
+            box-shadow: 0 4px 15px rgba(38, 222, 129, 0.3);
+        }
+
+        .btn-history {
+            background: linear-gradient(45deg, #a55eea, #3742fa);
+            box-shadow: 0 4px 15px rgba(165, 94, 234, 0.3);
+        }
+
+        .btn-output {
+            background: linear-gradient(45deg, #fd79a8, #fdcb6e);
+            box-shadow: 0 4px 15px rgba(253, 121, 168, 0.3);
+            font-size: 16px;
+            padding: 15px 30px;
+        }
+
+        .btn-delete {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-delete:hover {
+            background: linear-gradient(45deg, #c0392b, #a93226);
+        }
+
+        /* 情報パネル */
         .info-panel {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             padding: 20px;
-            margin-bottom: 20px;
             backdrop-filter: blur(5px);
         }
 
@@ -428,14 +563,101 @@
             border-bottom: none;
         }
 
-        .combine-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            text-align: center;
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
         }
 
+        .modal-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #4ecdc4;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #fff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* 確認ダイアログ */
+        .confirm-dialog {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .confirm-dialog p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .confirm-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .confirm-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .confirm-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .confirm-option.selected {
+            border-color: #4ecdc4;
+            background: rgba(78, 205, 196, 0.2);
+        }
+
+        /* ユーティリティ */
         .loading {
             text-align: center;
             padding: 20px;
@@ -453,55 +675,72 @@
             border: 1px solid rgba(255, 107, 107, 0.3);
         }
 
-        .drag-hint {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            pointer-events: none;
-            z-index: 1;
+        .success {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            font-weight: bold;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         /* レスポンシブデザイン */
-        @media (max-width: 1024px) {
-            .workspace {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 20px;
+        @media (max-width: 1200px) {
+            .main-workspace {
+                grid-template-columns: 250px 1fr;
             }
         }
 
         @media (max-width: 768px) {
-            .controls {
+            .main-workspace {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .left-panel {
+                order: 2;
+            }
+            
+            .right-panel {
+                order: 1;
+            }
+            
+            .history-controls {
                 flex-direction: column;
-                align-items: center;
+                gap: 10px;
             }
             
-            .btn {
-                width: 100%;
-                max-width: 200px;
-            }
-            
-            .timeline-controls {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .timeline-header {
+            .format-selection {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 15px;
+            }
+            
+            .zoom-controls {
+                flex-wrap: wrap;
+                gap: 5px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎵 Audio Wave Editor - 最適化版</h1>
+        <h1>🎵 Professional Audio Wave Editor - 波形ズーム機能付き完全版</h1>
         
         <div class="file-input-section">
             <label for="audioFile" class="file-input-label">
@@ -510,21 +749,33 @@
             <input type="file" id="audioFile" class="file-input" accept=".mp3,.wav,.m4a" multiple>
         </div>
 
-        <div class="controls">
-            <button class="btn btn-play" id="playBtn" disabled>▶️ 再生</button>
-            <button class="btn btn-stop" id="stopBtn" disabled>⏹️ 停止</button>
-            <button class="btn btn-trim" id="trimBtn" disabled>✂️ トリミング</button>
-            <button class="btn btn-clear" id="clearBtn" disabled>🗑️ 選択解除</button>
-            <button class="btn btn-download" id="downloadBtn" disabled>💾 ダウンロード</button>
+        <!-- 作業履歴コントロール -->
+        <div class="history-controls">
+            <button class="btn btn-history btn-small" id="undoBtn" disabled>
+                ↶ 戻る
+            </button>
+            <button class="btn btn-history btn-small" id="redoBtn" disabled>
+                ↷ 進む
+            </button>
+            <div class="history-info">
+                <span>履歴:</span>
+                <span id="historyCount">0/20</span>
+            </div>
+            <button class="btn btn-accent btn-small" id="showHistoryBtn" disabled>
+                📋 履歴表示
+            </button>
         </div>
 
-        <div class="workspace">
+        <div class="main-workspace">
+            <!-- 左パネル - トラック管理 -->
             <div class="left-panel">
                 <div class="track-list" id="trackList" style="display: none;">
                     <h3>🎼 トラック一覧</h3>
                     <div id="tracks"></div>
-                    <div class="combine-section">
-                        <button class="btn btn-trim" id="combineBtn" disabled>🔗 選択したトラックを結合</button>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn btn-accent btn-small" id="combineBtn" disabled>
+                            🔗 選択したトラックを結合
+                        </button>
                     </div>
                 </div>
 
@@ -549,31 +800,99 @@
                 </div>
             </div>
 
+            <!-- 右パネル - 波形編集エリア -->
             <div class="right-panel">
+                <div class="waveform-container">
+                    <div class="waveform-header">
+                        <div class="waveform-title">🎵 波形エディタ</div>
+                        <div class="waveform-info" id="waveformInfo">
+                            ファイルを選択してください
+                        </div>
+                    </div>
+                    
+                    <!-- 波形コントロールバー -->
+                    <div class="waveform-controls">
+                        <button class="btn btn-success" id="playSelectionBtn" disabled>
+                            ▶️ 選択範囲再生
+                        </button>
+                        <button class="btn btn-primary" id="playFullBtn" disabled>
+                            ▶️ 全体再生
+                        </button>
+                        <button class="btn btn-secondary" id="stopBtn" disabled>
+                            ⏹️ 停止
+                        </button>
+                        <button class="btn btn-accent" id="loopBtn" disabled>
+                            🔄 ループ
+                        </button>
+                        <button class="btn btn-accent" id="trimBtn" disabled>
+                            ✂️ トリミング
+                        </button>
+                        <button class="btn btn-delete" id="deleteBtn" disabled>
+                            🗑️ 部分削除
+                        </button>
+                        <button class="btn btn-secondary" id="clearBtn" disabled>
+                            ❌ 選択解除
+                        </button>
+                        
+                        <!-- ズームコントロール -->
+                        <div class="zoom-controls">
+                            <button class="btn btn-zoom-in" id="zoomInBtn" disabled>
+                                🔍+ 拡大
+                            </button>
+                            <div class="zoom-level" id="zoomLevel">100%</div>
+                            <button class="btn btn-zoom-out" id="zoomOutBtn" disabled>
+                                🔍- 縮小
+                            </button>
+                            <button class="btn btn-zoom-fit" id="zoomFitBtn" disabled>
+                                📐 全体表示
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 波形キャンバス -->
+                    <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                    
+                    <!-- 選択範囲情報 -->
+                    <div class="selection-info" id="selectionInfo">
+                        <div>範囲をドラッグして選択してください</div>
+                        <div class="selection-details" id="selectionDetails" style="display: none;">
+                            <div class="selection-detail">
+                                <div class="selection-label">開始</div>
+                                <div class="selection-value" id="selectionStart">0:00</div>
+                            </div>
+                            <div class="selection-detail">
+                                <div class="selection-label">終了</div>
+                                <div class="selection-value" id="selectionEnd">0:00</div>
+                            </div>
+                            <div class="selection-detail">
+                                <div class="selection-label">長さ</div>
+                                <div class="selection-value" id="selectionLength">0:00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- タイムライン -->
                 <div class="timeline-container">
                     <div class="timeline-header">
                         <h3>🎬 タイムライン</h3>
                         <div class="timeline-controls">
-                            <button class="btn btn-play btn-small" id="timelinePlayBtn" disabled>▶️ 再生</button>
-                            <button class="btn btn-stop btn-small" id="timelineStopBtn" disabled>⏹️ 停止</button>
-                            <button class="btn btn-clear btn-small" id="clearTimelineBtn" disabled>🗑️ クリア</button>
-                            <button class="btn btn-download btn-small" id="renderTimelineBtn" disabled>🎵 レンダリング</button>
+                            <button class="btn btn-primary btn-small" id="timelinePlayBtn" disabled>
+                                ▶️ 再生
+                            </button>
+                            <button class="btn btn-secondary btn-small" id="timelineStopBtn" disabled>
+                                ⏹️ 停止
+                            </button>
+                            <button class="btn btn-accent btn-small" id="renderTimelineBtn" disabled>
+                                🎵 レンダリング
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="timeline-ruler" id="timelineRuler">
-                        <div class="ruler-marks" id="rulerMarks"></div>
-                        <div class="timeline-playhead" id="playhead" style="left: 0;"></div>
-                    </div>
-                    
                     <div class="timeline-track" id="timelineTrack">
-                        <h4>🎵 オーディオトラック</h4>
                         <div class="timeline-clips" id="timelineClips">
-                            <div class="empty-timeline">
-                                <div class="drag-hint">
-                                    左のトラック一覧からここにドラッグして<br>
-                                    タイムラインに追加してください
-                                </div>
+                            <div style="text-align: center; color: rgba(255, 255, 255, 0.5); font-style: italic; padding: 20px;">
+                                左のトラック一覧からここにドラッグしてタイムラインに追加
                             </div>
                         </div>
                     </div>
@@ -581,10 +900,34 @@
             </div>
         </div>
 
-        <div class="waveform-container">
-            <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
-            <div class="selection-info" id="selectionInfo">
-                範囲を選択してトリミングできます
+        <!-- 出力セクション -->
+        <div class="output-section">
+            <div class="output-header">
+                <h3>🎵 作業完了・出力</h3>
+                <button class="btn btn-output" id="finalOutputBtn" disabled>
+                    💾 最終出力
+                </button>
+            </div>
+            
+            <div class="format-selection">
+                <div class="format-option selected" data-format="wav">
+                    <input type="radio" name="outputFormat" value="wav" checked>
+                    <label>🎵 WAV形式 (高品質・無圧縮)</label>
+                </div>
+                <div class="format-option" data-format="mp3">
+                    <input type="radio" name="outputFormat" value="mp3">
+                    <label>🎵 MP3形式 (圧縮・小サイズ)</label>
+                </div>
+            </div>
+            
+            <div class="quality-settings" id="mp3QualitySettings" style="display: none;">
+                <label for="mp3Quality">MP3品質設定:</label>
+                <select id="mp3Quality">
+                    <option value="128">128 kbps (標準品質)</option>
+                    <option value="192" selected>192 kbps (高品質)</option>
+                    <option value="256">256 kbps (最高品質)</option>
+                    <option value="320">320 kbps (プレミアム品質)</option>
+                </select>
             </div>
         </div>
 
@@ -595,8 +938,51 @@
         <div class="error" id="errorMessage" style="display: none;"></div>
     </div>
 
+    <!-- 履歴表示モーダル -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📋 作業履歴</h3>
+                <span class="close" id="closeHistoryModal">&times;</span>
+            </div>
+            <div id="historyList" style="max-height: 400px; overflow-y: auto;">
+                <!-- 履歴リストがここに表示されます -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 部分削除確認モーダル -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🗑️ 部分削除の確認</h3>
+                <span class="close" id="closeDeleteModal">&times;</span>
+            </div>
+            <div class="confirm-dialog">
+                <p>選択した範囲を削除しますか？</p>
+                <div id="deleteRangeInfo" style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
+                    <!-- 削除範囲情報がここに表示されます -->
+                </div>
+                <div class="confirm-options">
+                    <div class="confirm-option selected" data-action="delete">
+                        <input type="radio" name="deleteAction" value="delete" checked>
+                        <label>🗑️ 完全削除 (選択範囲を削除し、前後を結合)</label>
+                    </div>
+                    <div class="confirm-option" data-action="silence">
+                        <input type="radio" name="deleteAction" value="silence">
+                        <label>🔇 無音化 (選択範囲を無音にし、長さは保持)</label>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-secondary" id="cancelDeleteBtn">キャンセル</button>
+                    <button class="btn btn-delete" id="confirmDeleteBtn">実行</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        class AudioEditor {
+        class ProfessionalAudioEditorWithZoom {
             constructor() {
                 this.audioContext = null;
                 this.audioBuffer = null;
@@ -604,21 +990,36 @@
                 this.canvas = document.getElementById('waveformCanvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.isPlaying = false;
+                this.isLooping = false;
                 this.currentFile = null;
                 this.selection = { start: null, end: null };
                 this.tracks = [];
                 this.selectedTracks = new Set();
                 this.timelineClips = [];
-                this.timelineIsPlaying = false;
-                this.timelineStartTime = 0;
-                this.timelineCurrentTime = 0;
-                this.timelineAnimationId = null;
-                this.draggedTrack = null;
+                this.playbackType = 'full';
+                
+                // 作業履歴管理
+                this.history = [];
+                this.historyIndex = -1;
+                this.maxHistorySize = 20;
+                
+                // 削除操作関連
+                this.deleteAction = 'delete';
+                
+                // ズーム機能関連
+                this.zoomLevels = [0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0];
+                this.currentZoomIndex = 4; // 1.0x (100%)
+                this.zoomStartTime = 0; // ズーム時の開始時間
+                this.zoomViewDuration = null; // ズーム表示時間範囲
                 
                 this.initializeAudioContext();
                 this.setupEventListeners();
                 this.setupCanvas();
                 this.setupTimeline();
+                this.setupOutputSection();
+                this.setupHistoryModal();
+                this.setupDeleteModal();
+                this.saveState('初期状態');
             }
 
             async initializeAudioContext() {
@@ -630,6 +1031,7 @@
             }
 
             setupEventListeners() {
+                // ファイル選択
                 document.getElementById('audioFile').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         Array.from(e.target.files).forEach(file => {
@@ -638,23 +1040,51 @@
                     }
                 });
 
-                document.getElementById('playBtn').addEventListener('click', () => this.playAudio());
+                // 履歴コントロール
+                document.getElementById('undoBtn').addEventListener('click', () => this.undo());
+                document.getElementById('redoBtn').addEventListener('click', () => this.redo());
+                document.getElementById('showHistoryBtn').addEventListener('click', () => this.showHistoryModal());
+
+                // 波形コントロール
+                document.getElementById('playSelectionBtn').addEventListener('click', () => this.playSelection());
+                document.getElementById('playFullBtn').addEventListener('click', () => this.playFull());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stopAudio());
+                document.getElementById('loopBtn').addEventListener('click', () => this.toggleLoop());
                 document.getElementById('trimBtn').addEventListener('click', () => this.trimAudio());
+                document.getElementById('deleteBtn').addEventListener('click', () => this.showDeleteConfirmModal());
                 document.getElementById('clearBtn').addEventListener('click', () => this.clearSelection());
-                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadAudio());
-                document.getElementById('combineBtn').addEventListener('click', () => this.combineTracks());
-                
-                // タイムライン関連のイベントリスナー
+
+                // ズームコントロール
+                document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
+                document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
+                document.getElementById('zoomFitBtn').addEventListener('click', () => this.zoomFit());
+
+                // タイムライン
                 document.getElementById('timelinePlayBtn').addEventListener('click', () => this.playTimeline());
                 document.getElementById('timelineStopBtn').addEventListener('click', () => this.stopTimeline());
-                document.getElementById('clearTimelineBtn').addEventListener('click', () => this.clearTimeline());
                 document.getElementById('renderTimelineBtn').addEventListener('click', () => this.renderTimeline());
 
+                // 結合ボタン
+                document.getElementById('combineBtn').addEventListener('click', () => this.combineTracks());
+
+                // 最終出力
+                document.getElementById('finalOutputBtn').addEventListener('click', () => this.finalOutput());
+
+                // 波形キャンバス
                 this.canvas.addEventListener('mousedown', (e) => this.startSelection(e));
                 this.canvas.addEventListener('mousemove', (e) => this.updateSelection(e));
                 this.canvas.addEventListener('mouseup', () => this.endSelection());
                 this.canvas.addEventListener('mouseleave', () => this.endSelection());
+
+                // マウスホイールでのズーム
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        this.zoomIn();
+                    } else {
+                        this.zoomOut();
+                    }
+                });
             }
 
             setupCanvas() {
@@ -665,7 +1095,6 @@
             setupTimeline() {
                 const timelineTrack = document.getElementById('timelineTrack');
                 
-                // ドラッグオーバーイベント
                 timelineTrack.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'copy';
@@ -678,7 +1107,6 @@
                     }
                 });
                 
-                // ドロップイベント
                 timelineTrack.addEventListener('drop', (e) => {
                     e.preventDefault();
                     timelineTrack.classList.remove('drag-over');
@@ -688,11 +1116,568 @@
                     
                     if (track) {
                         this.addToTimeline(track);
+                        this.saveState(`タイムラインに"${track.name}"を追加`);
                         this.showSuccess(`"${track.name}" をタイムラインに追加しました`);
                     }
                 });
+            }
+
+            setupOutputSection() {
+                // 出力形式選択
+                document.querySelectorAll('.format-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.format-option').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        
+                        const radio = option.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        
+                        const mp3Settings = document.getElementById('mp3QualitySettings');
+                        mp3Settings.style.display = radio.value === 'mp3' ? 'block' : 'none';
+                    });
+                });
+            }
+
+            setupHistoryModal() {
+                const modal = document.getElementById('historyModal');
+                const closeBtn = document.getElementById('closeHistoryModal');
                 
-                this.updateTimelineRuler();
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+                
+                window.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+
+            setupDeleteModal() {
+                const modal = document.getElementById('deleteConfirmModal');
+                const closeBtn = document.getElementById('closeDeleteModal');
+                const cancelBtn = document.getElementById('cancelDeleteBtn');
+                const confirmBtn = document.getElementById('confirmDeleteBtn');
+                
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+                
+                cancelBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+                
+                confirmBtn.addEventListener('click', () => {
+                    this.executeDelete();
+                    modal.style.display = 'none';
+                });
+                
+                // 削除方法選択
+                document.querySelectorAll('.confirm-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.confirm-option').forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        
+                        const radio = option.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        this.deleteAction = radio.value;
+                    });
+                });
+                
+                window.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+
+            // ズーム機能の実装
+            zoomIn() {
+                if (this.currentZoomIndex < this.zoomLevels.length - 1) {
+                    this.currentZoomIndex++;
+                    this.applyZoom();
+                    this.saveState(`ズーム拡大: ${this.getCurrentZoomLevel()}%`);
+                }
+            }
+
+            zoomOut() {
+                if (this.currentZoomIndex > 0) {
+                    this.currentZoomIndex--;
+                    this.applyZoom();
+                    this.saveState(`ズーム縮小: ${this.getCurrentZoomLevel()}%`);
+                }
+            }
+
+            zoomFit() {
+                this.currentZoomIndex = 4; // 100%
+                this.zoomStartTime = 0;
+                this.zoomViewDuration = null;
+                this.applyZoom();
+                this.saveState('ズーム全体表示');
+            }
+
+            getCurrentZoomLevel() {
+                return Math.round(this.zoomLevels[this.currentZoomIndex] * 100);
+            }
+
+            applyZoom() {
+                if (!this.audioBuffer) return;
+
+                const zoomFactor = this.zoomLevels[this.currentZoomIndex];
+                
+                if (zoomFactor === 1.0) {
+                    // 100%の場合は全体表示
+                    this.zoomStartTime = 0;
+                    this.zoomViewDuration = null;
+                } else if (zoomFactor > 1.0) {
+                    // 拡大の場合
+                    const totalDuration = this.audioBuffer.duration;
+                    this.zoomViewDuration = totalDuration / zoomFactor;
+                    
+                    // 選択範囲がある場合はその中心を基準にズーム
+                    if (this.selection.start !== null && this.selection.end !== null) {
+                        const selectionCenter = (this.selection.start + this.selection.end) / 2;
+                        this.zoomStartTime = Math.max(0, selectionCenter - this.zoomViewDuration / 2);
+                        this.zoomStartTime = Math.min(this.zoomStartTime, totalDuration - this.zoomViewDuration);
+                    } else {
+                        // 現在の表示範囲の中心を保持
+                        const currentCenter = this.zoomStartTime + (this.zoomViewDuration || totalDuration) / 2;
+                        this.zoomStartTime = Math.max(0, currentCenter - this.zoomViewDuration / 2);
+                        this.zoomStartTime = Math.min(this.zoomStartTime, totalDuration - this.zoomViewDuration);
+                    }
+                } else {
+                    // 縮小の場合
+                    this.zoomStartTime = 0;
+                    this.zoomViewDuration = null;
+                }
+
+                this.updateZoomDisplay();
+                this.drawWaveform();
+                this.updateZoomButtons();
+            }
+
+            updateZoomDisplay() {
+                const zoomLevel = document.getElementById('zoomLevel');
+                zoomLevel.textContent = `${this.getCurrentZoomLevel()}%`;
+            }
+
+            updateZoomButtons() {
+                const hasAudio = !!this.audioBuffer;
+                const canZoomIn = this.currentZoomIndex < this.zoomLevels.length - 1;
+                const canZoomOut = this.currentZoomIndex > 0;
+                
+                document.getElementById('zoomInBtn').disabled = !hasAudio || !canZoomIn;
+                document.getElementById('zoomOutBtn').disabled = !hasAudio || !canZoomOut;
+                document.getElementById('zoomFitBtn').disabled = !hasAudio;
+            }
+
+            // 波形描画の更新（ズーム対応）
+            drawWaveform() {
+                if (!this.audioBuffer) return;
+
+                const width = this.canvas.width / window.devicePixelRatio;
+                const height = this.canvas.height / window.devicePixelRatio;
+                
+                this.ctx.clearRect(0, 0, width, height);
+                
+                const data = this.audioBuffer.getChannelData(0);
+                const totalDuration = this.audioBuffer.duration;
+                
+                // ズーム表示範囲の計算
+                let startTime = this.zoomStartTime;
+                let endTime = this.zoomViewDuration ? startTime + this.zoomViewDuration : totalDuration;
+                
+                const startSample = Math.floor(startTime * this.audioBuffer.sampleRate);
+                const endSample = Math.floor(endTime * this.audioBuffer.sampleRate);
+                const viewSamples = endSample - startSample;
+                
+                const step = Math.max(1, Math.ceil(viewSamples / width));
+                const amp = height / 2;
+
+                // 波形の描画[2][16][17]
+                this.ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+                this.ctx.strokeStyle = '#4ecdc4';
+                this.ctx.lineWidth = 1;
+
+                for (let i = 0; i < width; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    
+                    const sampleStart = startSample + (i * step);
+                    const sampleEnd = Math.min(startSample + ((i + 1) * step), data.length);
+                    
+                    for (let j = sampleStart; j < sampleEnd; j++) {
+                        if (j >= 0 && j < data.length) {
+                            const datum = data[j];
+                            if (datum < min) min = datum;
+                            if (datum > max) max = datum;
+                        }
+                    }
+                    
+                    const y1 = (1 + min) * amp;
+                    const y2 = (1 + max) * amp;
+                    
+                    this.ctx.fillRect(i, y1, 1, y2 - y1);
+                }
+
+                // 選択範囲の描画（ズーム対応）
+                if (this.selection.start !== null && this.selection.end !== null) {
+                    const displayStartTime = startTime;
+                    const displayDuration = endTime - startTime;
+                    
+                    if (this.selection.end >= displayStartTime && this.selection.start <= endTime) {
+                        const selectionStartInView = Math.max(0, this.selection.start - displayStartTime);
+                        const selectionEndInView = Math.min(displayDuration, this.selection.end - displayStartTime);
+                        
+                        const startX = (selectionStartInView / displayDuration) * width;
+                        const endX = (selectionEndInView / displayDuration) * width;
+                        
+                        this.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+                        this.ctx.fillRect(startX, 0, endX - startX, height);
+                        
+                        this.ctx.strokeStyle = '#ff6b6b';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(startX, 0);
+                        this.ctx.lineTo(startX, height);
+                        this.ctx.moveTo(endX, 0);
+                        this.ctx.lineTo(endX, height);
+                        this.ctx.stroke();
+                    }
+                }
+            }
+
+            // 選択範囲の更新（ズーム対応）
+            startSelection(e) {
+                if (!this.audioBuffer) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const width = rect.width;
+                
+                const displayStartTime = this.zoomStartTime;
+                const displayDuration = this.zoomViewDuration || this.audioBuffer.duration;
+                
+                this.selection.start = displayStartTime + (x / width) * displayDuration;
+                this.selection.end = this.selection.start;
+                this.isSelecting = true;
+            }
+
+            updateSelection(e) {
+                if (!this.isSelecting || !this.audioBuffer) return;
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const width = rect.width;
+                
+                const displayStartTime = this.zoomStartTime;
+                const displayDuration = this.zoomViewDuration || this.audioBuffer.duration;
+                
+                this.selection.end = displayStartTime + (x / width) * displayDuration;
+                this.drawWaveform();
+                this.updateSelectionInfo();
+            }
+
+            endSelection() {
+                this.isSelecting = false;
+                if (this.selection.start !== null && this.selection.end !== null) {
+                    if (this.selection.start > this.selection.end) {
+                        [this.selection.start, this.selection.end] = [this.selection.end, this.selection.start];
+                    }
+                    
+                    // 選択範囲を音声ファイルの範囲内に制限
+                    this.selection.start = Math.max(0, this.selection.start);
+                    this.selection.end = Math.min(this.audioBuffer.duration, this.selection.end);
+                    
+                    this.updateButtons();
+                    this.updateSelectionInfo();
+                    
+                    if (Math.abs(this.selection.end - this.selection.start) > 0.1) {
+                        this.saveState(`範囲選択: ${this.formatTime(this.selection.start)} - ${this.formatTime(this.selection.end)}`);
+                    }
+                }
+            }
+
+            showDeleteConfirmModal() {
+                if (!this.audioBuffer || this.selection.start === null || this.selection.end === null) {
+                    this.showError('削除する範囲を選択してください');
+                    return;
+                }
+
+                const modal = document.getElementById('deleteConfirmModal');
+                const rangeInfo = document.getElementById('deleteRangeInfo');
+                
+                const duration = Math.abs(this.selection.end - this.selection.start);
+                rangeInfo.innerHTML = `
+                    <strong>削除範囲:</strong><br>
+                    開始: ${this.formatTime(this.selection.start)}<br>
+                    終了: ${this.formatTime(this.selection.end)}<br>
+                    長さ: ${this.formatTime(duration)}
+                `;
+                
+                modal.style.display = 'block';
+            }
+
+            async executeDelete() {
+                if (!this.audioBuffer || this.selection.start === null || this.selection.end === null) return;
+
+                try {
+                    this.showLoading(true);
+                    
+                    if (this.deleteAction === 'silence') {
+                        await this.silenceSelection();
+                    } else {
+                        await this.deleteSelection();
+                    }
+                    
+                    this.showLoading(false);
+                } catch (error) {
+                    this.showError(`削除処理に失敗しました: ${error.message}`);
+                    this.showLoading(false);
+                }
+            }
+
+            async silenceSelection() {
+                const startSample = Math.floor(this.selection.start * this.audioBuffer.sampleRate);
+                const endSample = Math.floor(this.selection.end * this.audioBuffer.sampleRate);
+                
+                const newBuffer = this.audioContext.createBuffer(
+                    this.audioBuffer.numberOfChannels,
+                    this.audioBuffer.length,
+                    this.audioBuffer.sampleRate
+                );
+                
+                for (let channel = 0; channel < this.audioBuffer.numberOfChannels; channel++) {
+                    const sourceData = this.audioBuffer.getChannelData(channel);
+                    const newData = newBuffer.getChannelData(channel);
+                    
+                    for (let i = 0; i < sourceData.length; i++) {
+                        newData[i] = sourceData[i];
+                    }
+                    
+                    for (let i = startSample; i < endSample && i < sourceData.length; i++) {
+                        newData[i] = 0;
+                    }
+                }
+                
+                const silencedTrack = {
+                    id: Date.now() + Math.floor(Math.random() * 10000),
+                    name: `${this.currentFile.name}_silenced`,
+                    buffer: newBuffer,
+                    duration: newBuffer.duration,
+                    sampleRate: newBuffer.sampleRate,
+                    channels: newBuffer.numberOfChannels
+                };
+                
+                this.tracks.push(silencedTrack);
+                this.updateTrackList();
+                this.selectTrack(silencedTrack);
+                
+                this.saveState(`範囲無音化: ${this.formatTime(this.selection.start)} - ${this.formatTime(this.selection.end)}`);
+                this.showSuccess('選択範囲を無音化しました');
+            }
+
+            async deleteSelection() {
+                const startSample = Math.floor(this.selection.start * this.audioBuffer.sampleRate);
+                const endSample = Math.floor(this.selection.end * this.audioBuffer.sampleRate);
+                
+                const newLength = this.audioBuffer.length - (endSample - startSample);
+                
+                const newBuffer = this.audioContext.createBuffer(
+                    this.audioBuffer.numberOfChannels,
+                    newLength,
+                    this.audioBuffer.sampleRate
+                );
+                
+                for (let channel = 0; channel < this.audioBuffer.numberOfChannels; channel++) {
+                    const sourceData = this.audioBuffer.getChannelData(channel);
+                    const newData = newBuffer.getChannelData(channel);
+                    
+                    let newIndex = 0;
+                    
+                    for (let i = 0; i < startSample && i < sourceData.length; i++) {
+                        newData[newIndex++] = sourceData[i];
+                    }
+                    
+                    for (let i = endSample; i < sourceData.length; i++) {
+                        if (newIndex < newLength) {
+                            newData[newIndex++] = sourceData[i];
+                        }
+                    }
+                }
+                
+                const deletedTrack = {
+                    id: Date.now() + Math.floor(Math.random() * 10000),
+                    name: `${this.currentFile.name}_deleted`,
+                    buffer: newBuffer,
+                    duration: newBuffer.duration,
+                    sampleRate: newBuffer.sampleRate,
+                    channels: newBuffer.numberOfChannels
+                };
+                
+                this.tracks.push(deletedTrack);
+                this.updateTrackList();
+                this.selectTrack(deletedTrack);
+                
+                this.saveState(`部分削除: ${this.formatTime(this.selection.start)} - ${this.formatTime(this.selection.end)}`);
+                this.showSuccess('選択範囲を削除しました');
+            }
+
+            // 作業履歴管理
+            saveState(description) {
+                const state = {
+                    timestamp: new Date().toLocaleString(),
+                    description: description,
+                    tracks: JSON.parse(JSON.stringify(this.tracks.map(track => ({
+                        id: track.id,
+                        name: track.name,
+                        duration: track.duration,
+                        sampleRate: track.sampleRate,
+                        channels: track.channels
+                    })))),
+                    timelineClips: JSON.parse(JSON.stringify(this.timelineClips.map(clip => ({
+                        id: clip.id,
+                        trackId: clip.trackId,
+                        name: clip.name,
+                        duration: clip.duration,
+                        startTime: clip.startTime
+                    })))),
+                    currentFileId: this.currentFile ? this.currentFile.id : null,
+                    selection: { ...this.selection },
+                    zoomState: {
+                        currentZoomIndex: this.currentZoomIndex,
+                        zoomStartTime: this.zoomStartTime,
+                        zoomViewDuration: this.zoomViewDuration
+                    }
+                };
+
+                this.history = this.history.slice(0, this.historyIndex + 1);
+                this.history.push(state);
+                this.historyIndex = this.history.length - 1;
+                
+                if (this.history.length > this.maxHistorySize) {
+                    this.history.shift();
+                    this.historyIndex--;
+                }
+                
+                this.updateHistoryButtons();
+            }
+
+            undo() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.restoreState(this.history[this.historyIndex]);
+                    this.showSuccess(`作業を戻しました: ${this.history[this.historyIndex].description}`);
+                }
+            }
+
+            redo() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.restoreState(this.history[this.historyIndex]);
+                    this.showSuccess(`作業を進めました: ${this.history[this.historyIndex].description}`);
+                }
+            }
+
+            restoreState(state) {
+                this.selection = { ...state.selection };
+                
+                // ズーム状態の復元
+                if (state.zoomState) {
+                    this.currentZoomIndex = state.zoomState.currentZoomIndex;
+                    this.zoomStartTime = state.zoomState.zoomStartTime;
+                    this.zoomViewDuration = state.zoomState.zoomViewDuration;
+                }
+                
+                // 現在のファイルを復元
+                if (state.currentFileId) {
+                    const currentTrack = this.tracks.find(t => t.id === state.currentFileId);
+                    if (currentTrack) {
+                        this.selectTrack(currentTrack);
+                    }
+                }
+                
+                this.updateHistoryButtons();
+                this.updateButtons();
+                this.updateZoomDisplay();
+                this.updateZoomButtons();
+                this.drawWaveform();
+            }
+
+            updateHistoryButtons() {
+                const undoBtn = document.getElementById('undoBtn');
+                const redoBtn = document.getElementById('redoBtn');
+                const historyCount = document.getElementById('historyCount');
+                const showHistoryBtn = document.getElementById('showHistoryBtn');
+                
+                undoBtn.disabled = this.historyIndex <= 0;
+                redoBtn.disabled = this.historyIndex >= this.history.length - 1;
+                showHistoryBtn.disabled = this.history.length === 0;
+                
+                historyCount.textContent = `${this.history.length}/${this.maxHistorySize}`;
+                
+                if (this.historyIndex > 0) {
+                    undoBtn.textContent = `↶ 戻る (${this.history[this.historyIndex - 1].description})`;
+                } else {
+                    undoBtn.textContent = '↶ 戻る';
+                }
+                
+                if (this.historyIndex < this.history.length - 1) {
+                    redoBtn.textContent = `↷ 進む (${this.history[this.historyIndex + 1].description})`;
+                } else {
+                    redoBtn.textContent = '↷ 進む';
+                }
+            }
+
+            showHistoryModal() {
+                const modal = document.getElementById('historyModal');
+                const historyList = document.getElementById('historyList');
+                
+                historyList.innerHTML = '';
+                
+                this.history.forEach((state, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.style.cssText = `
+                        padding: 10px;
+                        margin: 5px 0;
+                        background: ${index === this.historyIndex ? 'rgba(78, 205, 196, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+                        border-radius: 8px;
+                        border-left: 4px solid ${index === this.historyIndex ? '#4ecdc4' : 'transparent'};
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    `;
+                    
+                    historyItem.innerHTML = `
+                        <div style="font-weight: bold; color: #4ecdc4;">${state.description}</div>
+                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7);">${state.timestamp}</div>
+                        <div style="font-size: 11px; color: rgba(255, 255, 255, 0.5);">
+                            トラック: ${state.tracks.length}個 | タイムライン: ${state.timelineClips.length}個
+                        </div>
+                    `;
+                    
+                    historyItem.addEventListener('click', () => {
+                        this.historyIndex = index;
+                        this.restoreState(state);
+                        modal.style.display = 'none';
+                        this.showSuccess(`"${state.description}" の状態に復元しました`);
+                    });
+                    
+                    historyItem.addEventListener('mouseenter', () => {
+                        if (index !== this.historyIndex) {
+                            historyItem.style.background = 'rgba(255, 255, 255, 0.2)';
+                        }
+                    });
+                    
+                    historyItem.addEventListener('mouseleave', () => {
+                        if (index !== this.historyIndex) {
+                            historyItem.style.background = 'rgba(255, 255, 255, 0.1)';
+                        }
+                    });
+                    
+                    historyList.appendChild(historyItem);
+                });
+                
+                modal.style.display = 'block';
             }
 
             resizeCanvas() {
@@ -728,6 +1713,7 @@
                         this.selectTrack(track);
                     }
 
+                    this.saveState(`ファイル"${file.name}"を読み込み`);
                     this.showLoading(false);
                     this.showSuccess(`"${file.name}" を読み込みました`);
                 } catch (error) {
@@ -741,9 +1727,18 @@
                 this.currentFile = track;
                 this.selection = { start: null, end: null };
                 
+                // 選択状態を更新
+                document.querySelectorAll('.track-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                document.querySelector(`[data-track-id="${track.id}"]`)?.classList.add('selected');
+                
                 this.updateFileInfo();
+                this.updateWaveformInfo();
                 this.drawWaveform();
                 this.updateButtons();
+                this.updateFinalOutputButton();
+                this.updateZoomButtons();
             }
 
             updateTrackList() {
@@ -762,6 +1757,7 @@
                 this.tracks.forEach(track => {
                     const trackElement = document.createElement('div');
                     trackElement.className = 'track-item';
+                    trackElement.setAttribute('data-track-id', track.id);
                     trackElement.innerHTML = `
                         <div class="track-info">
                             <input type="checkbox" id="track-${track.id}" 
@@ -772,10 +1768,10 @@
                             </div>
                         </div>
                         <div class="track-actions">
-                            <button class="btn btn-play btn-small" data-track-id="${track.id}" data-action="select">
+                            <button class="btn btn-primary btn-small" data-track-id="${track.id}" data-action="select">
                                 選択
                             </button>
-                            <button class="btn btn-stop btn-small" data-track-id="${track.id}" data-action="remove">
+                            <button class="btn btn-secondary btn-small" data-track-id="${track.id}" data-action="remove">
                                 削除
                             </button>
                         </div>
@@ -786,17 +1782,11 @@
                     trackElement.addEventListener('dragstart', (e) => {
                         e.dataTransfer.setData('text/plain', track.id.toString());
                         e.dataTransfer.effectAllowed = 'copy';
-                        trackElement.classList.add('dragging');
-                        this.draggedTrack = track;
-                    });
-                    
-                    trackElement.addEventListener('dragend', () => {
-                        trackElement.classList.remove('dragging');
-                        this.draggedTrack = null;
                     });
                     
                     tracksContainer.appendChild(trackElement);
 
+                    // イベントリスナー
                     const checkbox = trackElement.querySelector(`#track-${track.id}`);
                     checkbox.addEventListener('change', (e) => {
                         if (e.target.checked) {
@@ -807,13 +1797,12 @@
                         combineBtn.disabled = this.selectedTracks.size < 2;
                     });
 
-                    // ボタンのイベントリスナー
                     const selectBtn = trackElement.querySelector('[data-action="select"]');
                     const removeBtn = trackElement.querySelector('[data-action="remove"]');
                     
                     selectBtn.addEventListener('click', () => {
-                        const targetTrack = this.tracks.find(t => t.id === track.id);
-                        if (targetTrack) this.selectTrack(targetTrack);
+                        this.selectTrack(track);
+                        this.saveState(`トラック"${track.name}"を選択`);
                     });
                     
                     removeBtn.addEventListener('click', () => {
@@ -822,254 +1811,6 @@
                 });
 
                 combineBtn.disabled = this.selectedTracks.size < 2;
-            }
-
-            addToTimeline(track) {
-                const clip = {
-                    id: Date.now() + Math.floor(Math.random() * 10000),
-                    trackId: track.id,
-                    name: track.name,
-                    duration: track.duration,
-                    buffer: track.buffer,
-                    startTime: this.getTimelineEndTime()
-                };
-                
-                this.timelineClips.push(clip);
-                this.updateTimelineDisplay();
-                this.updateTimelineButtons();
-            }
-
-            getTimelineEndTime() {
-                if (this.timelineClips.length === 0) return 0;
-                return Math.max(...this.timelineClips.map(clip => clip.startTime + clip.duration));
-            }
-
-            updateTimelineDisplay() {
-                const timelineClips = document.getElementById('timelineClips');
-                
-                if (this.timelineClips.length === 0) {
-                    timelineClips.innerHTML = `
-                        <div class="empty-timeline">
-                            <div class="drag-hint">
-                                左のトラック一覧からここにドラッグして<br>
-                                タイムラインに追加してください
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                timelineClips.innerHTML = '';
-                
-                this.timelineClips.forEach(clip => {
-                    const clipElement = document.createElement('div');
-                    clipElement.className = 'timeline-clip';
-                    clipElement.innerHTML = `
-                        <div>${clip.name}</div>
-                        <div style="font-size: 10px; opacity: 0.8;">${this.formatTime(clip.duration)}</div>
-                        <button class="remove-btn" data-clip-id="${clip.id}">×</button>
-                    `;
-                    
-                    // クリップの幅を時間に応じて調整
-                    const totalDuration = this.getTimelineEndTime();
-                    const widthPercent = (clip.duration / totalDuration) * 100;
-                    clipElement.style.width = `${Math.max(widthPercent, 15)}%`;
-                    
-                    // 削除ボタンのイベントリスナー
-                    const removeBtn = clipElement.querySelector('.remove-btn');
-                    removeBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.removeFromTimeline(clip.id);
-                    });
-                    
-                    timelineClips.appendChild(clipElement);
-                });
-                
-                this.updateTimelineRuler();
-            }
-
-            removeFromTimeline(clipId) {
-                const clip = this.timelineClips.find(c => c.id === clipId);
-                if (clip) {
-                    this.timelineClips = this.timelineClips.filter(c => c.id !== clipId);
-                    this.updateTimelineDisplay();
-                    this.updateTimelineButtons();
-                    this.showSuccess(`"${clip.name}" をタイムラインから削除しました`);
-                }
-            }
-
-            updateTimelineRuler() {
-                const rulerMarks = document.getElementById('rulerMarks');
-                const totalDuration = this.getTimelineEndTime();
-                
-                if (totalDuration === 0) {
-                    rulerMarks.innerHTML = '';
-                    return;
-                }
-                
-                rulerMarks.innerHTML = '';
-                const markCount = Math.min(20, Math.ceil(totalDuration));
-                
-                for (let i = 0; i <= markCount; i++) {
-                    const mark = document.createElement('div');
-                    mark.className = 'ruler-mark';
-                    
-                    if (i % 5 === 0) {
-                        const time = document.createElement('div');
-                        time.className = 'ruler-time';
-                        time.textContent = this.formatTime((i / markCount) * totalDuration);
-                        mark.appendChild(time);
-                    }
-                    
-                    rulerMarks.appendChild(mark);
-                }
-            }
-
-            async playTimeline() {
-                if (this.timelineClips.length === 0 || this.timelineIsPlaying) return;
-                
-                try {
-                    this.timelineIsPlaying = true;
-                    this.timelineStartTime = this.audioContext.currentTime;
-                    this.timelineCurrentTime = 0;
-                    
-                    // 各クリップを順番に再生
-                    this.timelineClips.forEach(clip => {
-                        const source = this.audioContext.createBufferSource();
-                        source.buffer = clip.buffer;
-                        source.connect(this.audioContext.destination);
-                        source.start(this.timelineStartTime + clip.startTime);
-                    });
-                    
-                    this.updateTimelineButtons();
-                    this.animatePlayhead();
-                } catch (error) {
-                    this.showError(`タイムライン再生に失敗しました: ${error.message}`);
-                    this.timelineIsPlaying = false;
-                }
-            }
-
-            stopTimeline() {
-                this.timelineIsPlaying = false;
-                this.timelineCurrentTime = 0;
-                
-                if (this.timelineAnimationId) {
-                    cancelAnimationFrame(this.timelineAnimationId);
-                    this.timelineAnimationId = null;
-                }
-                
-                const playhead = document.getElementById('playhead');
-                playhead.style.left = '0';
-                
-                this.updateTimelineButtons();
-            }
-
-            animatePlayhead() {
-                if (!this.timelineIsPlaying) return;
-                
-                const elapsed = this.audioContext.currentTime - this.timelineStartTime;
-                const totalDuration = this.getTimelineEndTime();
-                
-                if (elapsed >= totalDuration) {
-                    this.stopTimeline();
-                    return;
-                }
-                
-                const progress = elapsed / totalDuration;
-                const playhead = document.getElementById('playhead');
-                playhead.style.left = `${progress * 100}%`;
-                
-                this.timelineAnimationId = requestAnimationFrame(() => this.animatePlayhead());
-            }
-
-            clearTimeline() {
-                this.timelineClips = [];
-                this.updateTimelineDisplay();
-                this.updateTimelineButtons();
-                this.stopTimeline();
-                this.showSuccess('タイムラインをクリアしました');
-            }
-
-            async renderTimeline() {
-                if (this.timelineClips.length === 0) return;
-                
-                try {
-                    this.showLoading(true);
-                    
-                    const totalDuration = this.getTimelineEndTime();
-                    const sampleRate = this.timelineClips[0].buffer.sampleRate;
-                    const totalSamples = Math.ceil(totalDuration * sampleRate);
-                    
-                    const renderedBuffer = this.audioContext.createBuffer(2, totalSamples, sampleRate);
-                    
-                    // 各クリップを適切な位置にミックス
-                    this.timelineClips.forEach(clip => {
-                        const startSample = Math.floor(clip.startTime * sampleRate);
-                        
-                        for (let channel = 0; channel < Math.min(renderedBuffer.numberOfChannels, clip.buffer.numberOfChannels); channel++) {
-                            const renderedData = renderedBuffer.getChannelData(channel);
-                            const sourceData = clip.buffer.getChannelData(channel);
-                            
-                            for (let i = 0; i < sourceData.length && startSample + i < totalSamples; i++) {
-                                renderedData[startSample + i] += sourceData[i];
-                            }
-                        }
-                    });
-                    
-                    // 新しいトラックとして追加
-                    const renderedTrack = {
-                        id: Date.now() + Math.floor(Math.random() * 10000),
-                        name: `timeline_rendered_${new Date().toLocaleTimeString()}`,
-                        buffer: renderedBuffer,
-                        duration: renderedBuffer.duration,
-                        sampleRate: renderedBuffer.sampleRate,
-                        channels: renderedBuffer.numberOfChannels
-                    };
-                    
-                    this.tracks.push(renderedTrack);
-                    this.updateTrackList();
-                    this.selectTrack(renderedTrack);
-                    
-                    this.showLoading(false);
-                    this.showSuccess('タイムラインをレンダリングしました');
-                } catch (error) {
-                    this.showError(`レンダリングに失敗しました: ${error.message}`);
-                    this.showLoading(false);
-                }
-            }
-
-            updateTimelineButtons() {
-                const hasClips = this.timelineClips.length > 0;
-                
-                document.getElementById('timelinePlayBtn').disabled = !hasClips || this.timelineIsPlaying;
-                document.getElementById('timelineStopBtn').disabled = !hasClips || !this.timelineIsPlaying;
-                document.getElementById('clearTimelineBtn').disabled = !hasClips;
-                document.getElementById('renderTimelineBtn').disabled = !hasClips;
-                
-                document.getElementById('timelinePlayBtn').textContent = this.timelineIsPlaying ? '⏸️ 一時停止' : '▶️ 再生';
-            }
-
-            removeTrack(trackId) {
-                const track = this.tracks.find(t => t.id === trackId);
-                if (track) {
-                    this.tracks = this.tracks.filter(t => t.id !== trackId);
-                    this.selectedTracks.delete(trackId);
-                    this.updateTrackList();
-                    
-                    if (this.currentFile && this.currentFile.id === trackId) {
-                        if (this.tracks.length > 0) {
-                            this.selectTrack(this.tracks[0]);
-                        } else {
-                            this.currentFile = null;
-                            this.audioBuffer = null;
-                            this.clearCanvas();
-                            this.updateButtons();
-                            document.getElementById('infoPanel').style.display = 'none';
-                        }
-                    }
-                    
-                    this.showSuccess(`"${track.name}" を削除しました`);
-                }
             }
 
             updateFileInfo() {
@@ -1082,107 +1823,18 @@
                 document.getElementById('infoPanel').style.display = 'block';
             }
 
-            drawWaveform() {
-                if (!this.audioBuffer) return;
-
-                const width = this.canvas.width / window.devicePixelRatio;
-                const height = this.canvas.height / window.devicePixelRatio;
-                
-                this.ctx.clearRect(0, 0, width, height);
-                
-                const data = this.audioBuffer.getChannelData(0);
-                const step = Math.ceil(data.length / width);
-                const amp = height / 2;
-
-                // 波形の描画
-                this.ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
-                this.ctx.strokeStyle = '#4ecdc4';
-                this.ctx.lineWidth = 1;
-
-                this.ctx.beginPath();
-                for (let i = 0; i < width; i++) {
-                    let min = 1.0;
-                    let max = -1.0;
-                    
-                    for (let j = 0; j < step; j++) {
-                        const datum = data[(i * step) + j];
-                        if (datum < min) min = datum;
-                        if (datum > max) max = datum;
-                    }
-                    
-                    const y1 = (1 + min) * amp;
-                    const y2 = (1 + max) * amp;
-                    
-                    this.ctx.fillRect(i, y1, 1, y2 - y1);
-                }
-
-                // 選択範囲の描画
-                if (this.selection.start !== null && this.selection.end !== null) {
-                    const startX = (this.selection.start / this.audioBuffer.duration) * width;
-                    const endX = (this.selection.end / this.audioBuffer.duration) * width;
-                    
-                    this.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
-                    this.ctx.fillRect(startX, 0, endX - startX, height);
-                    
-                    this.ctx.strokeStyle = '#ff6b6b';
-                    this.ctx.lineWidth = 2;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(startX, 0);
-                    this.ctx.lineTo(startX, height);
-                    this.ctx.moveTo(endX, 0);
-                    this.ctx.lineTo(endX, height);
-                    this.ctx.stroke();
-                }
-            }
-
-            clearCanvas() {
-                const width = this.canvas.width / window.devicePixelRatio;
-                const height = this.canvas.height / window.devicePixelRatio;
-                this.ctx.clearRect(0, 0, width, height);
-            }
-
-            startSelection(e) {
-                if (!this.audioBuffer) return;
-                
-                const rect = this.canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const width = rect.width;
-                
-                this.selection.start = (x / width) * this.audioBuffer.duration;
-                this.selection.end = this.selection.start;
-                this.isSelecting = true;
-            }
-
-            updateSelection(e) {
-                if (!this.isSelecting || !this.audioBuffer) return;
-                
-                const rect = this.canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const width = rect.width;
-                
-                this.selection.end = (x / width) * this.audioBuffer.duration;
-                this.drawWaveform();
-                this.updateSelectionInfo();
-            }
-
-            endSelection() {
-                this.isSelecting = false;
-                if (this.selection.start !== null && this.selection.end !== null) {
-                    if (this.selection.start > this.selection.end) {
-                        [this.selection.start, this.selection.end] = [this.selection.end, this.selection.start];
-                    }
-                    this.updateButtons();
-                }
-            }
-
-            updateSelectionInfo() {
-                const selectionInfo = document.getElementById('selectionInfo');
-                if (this.selection.start !== null && this.selection.end !== null) {
-                    const duration = Math.abs(this.selection.end - this.selection.start);
-                    selectionInfo.textContent = `選択範囲: ${this.formatTime(this.selection.start)} - ${this.formatTime(this.selection.end)} (${this.formatTime(duration)})`;
+            updateWaveformInfo() {
+                const waveformInfo = document.getElementById('waveformInfo');
+                if (this.currentFile) {
+                    waveformInfo.textContent = `${this.currentFile.name} - ${this.formatTime(this.currentFile.duration)}`;
                 } else {
-                    selectionInfo.textContent = '範囲を選択してトリミングできます';
+                    waveformInfo.textContent = 'ファイルを選択してください';
                 }
+            }
+
+            updateFinalOutputButton() {
+                const finalOutputBtn = document.getElementById('finalOutputBtn');
+                finalOutputBtn.disabled = this.tracks.length === 0;
             }
 
             clearSelection() {
@@ -1190,18 +1842,46 @@
                 this.drawWaveform();
                 this.updateSelectionInfo();
                 this.updateButtons();
+                this.saveState('選択範囲をクリア');
+            }
+
+            async playSelection() {
+                if (!this.audioBuffer || this.isPlaying) return;
+                if (this.selection.start === null || this.selection.end === null) {
+                    this.showError('選択範囲を設定してください');
+                    return;
+                }
+
+                this.playbackType = 'selection';
+                await this.playAudio();
+            }
+
+            async playFull() {
+                if (!this.audioBuffer || this.isPlaying) return;
+                
+                this.playbackType = 'full';
+                await this.playAudio();
             }
 
             async playAudio() {
-                if (!this.audioBuffer || this.isPlaying) return;
-
                 try {
                     this.audioSource = this.audioContext.createBufferSource();
                     this.audioSource.buffer = this.audioBuffer;
                     this.audioSource.connect(this.audioContext.destination);
                     
-                    const startTime = this.selection.start || 0;
-                    const duration = this.selection.end ? this.selection.end - startTime : undefined;
+                    let startTime = 0;
+                    let duration = undefined;
+                    
+                    if (this.playbackType === 'selection' && this.selection.start !== null && this.selection.end !== null) {
+                        startTime = this.selection.start;
+                        duration = this.selection.end - this.selection.start;
+                    }
+                    
+                    this.audioSource.loop = this.isLooping;
+                    if (this.isLooping && this.playbackType === 'selection') {
+                        this.audioSource.loopStart = this.selection.start;
+                        this.audioSource.loopEnd = this.selection.end;
+                    }
                     
                     this.audioSource.start(0, startTime, duration);
                     this.isPlaying = true;
@@ -1223,6 +1903,13 @@
                     this.isPlaying = false;
                     this.updateButtons();
                 }
+            }
+
+            toggleLoop() {
+                this.isLooping = !this.isLooping;
+                const loopBtn = document.getElementById('loopBtn');
+                loopBtn.classList.toggle('active', this.isLooping);
+                loopBtn.textContent = this.isLooping ? '🔄 ループ ON' : '🔄 ループ';
             }
 
             async trimAudio() {
@@ -1263,6 +1950,7 @@
                     this.updateTrackList();
                     this.selectTrack(trimmedTrack);
                     
+                    this.saveState(`トリミング実行: ${this.formatTime(this.selection.start)} - ${this.formatTime(this.selection.end)}`);
                     this.showLoading(false);
                     this.showSuccess('トリミングが完了しました');
                 } catch (error) {
@@ -1315,6 +2003,7 @@
                     this.updateTrackList();
                     this.selectTrack(combinedTrack);
                     
+                    this.saveState(`${selectedTrackList.length}個のトラックを結合`);
                     this.showLoading(false);
                     this.showSuccess('トラックの結合が完了しました');
                 } catch (error) {
@@ -1323,58 +2012,147 @@
                 }
             }
 
-            async downloadAudio() {
-                if (!this.audioBuffer) return;
+            removeTrack(trackId) {
+                const track = this.tracks.find(t => t.id === trackId);
+                if (track) {
+                    this.tracks = this.tracks.filter(t => t.id !== trackId);
+                    this.selectedTracks.delete(trackId);
+                    this.updateTrackList();
+                    
+                    if (this.currentFile && this.currentFile.id === trackId) {
+                        if (this.tracks.length > 0) {
+                            this.selectTrack(this.tracks[0]);
+                        } else {
+                            this.currentFile = null;
+                            this.audioBuffer = null;
+                            this.clearCanvas();
+                            this.updateButtons();
+                            document.getElementById('infoPanel').style.display = 'none';
+                            this.updateWaveformInfo();
+                        }
+                    }
+                    
+                    this.saveState(`トラック"${track.name}"を削除`);
+                    this.showSuccess(`"${track.name}" を削除しました`);
+                }
+            }
 
+            clearCanvas() {
+                const width = this.canvas.width / window.devicePixelRatio;
+                const height = this.canvas.height / window.devicePixelRatio;
+                this.ctx.clearRect(0, 0, width, height);
+            }
+
+            addToTimeline(track) {
+                const clip = {
+                    id: Date.now() + Math.floor(Math.random() * 10000),
+                    trackId: track.id,
+                    name: track.name,
+                    duration: track.duration,
+                    buffer: track.buffer,
+                    startTime: this.getTimelineEndTime()
+                };
+                
+                this.timelineClips.push(clip);
+                this.updateTimelineDisplay();
+                this.updateTimelineButtons();
+            }
+
+            getTimelineEndTime() {
+                if (this.timelineClips.length === 0) return 0;
+                return Math.max(...this.timelineClips.map(clip => clip.startTime + clip.duration));
+            }
+
+            updateTimelineDisplay() {
+                const timelineClips = document.getElementById('timelineClips');
+                
+                if (this.timelineClips.length === 0) {
+                    timelineClips.innerHTML = `
+                        <div style="text-align: center; color: rgba(255, 255, 255, 0.5); font-style: italic; padding: 20px;">
+                            左のトラック一覧からここにドラッグしてタイムラインに追加
+                        </div>
+                    `;
+                    return;
+                }
+                
+                timelineClips.innerHTML = '';
+                
+                this.timelineClips.forEach(clip => {
+                    const clipElement = document.createElement('div');
+                    clipElement.className = 'timeline-clip';
+                    clipElement.innerHTML = `
+                        <div>${clip.name}</div>
+                        <div style="font-size: 10px; opacity: 0.8;">${this.formatTime(clip.duration)}</div>
+                    `;
+                    
+                    timelineClips.appendChild(clipElement);
+                });
+            }
+
+            async playTimeline() {
+                if (this.timelineClips.length === 0) return;
+                
+                try {
+                    this.timelineClips.forEach(clip => {
+                        const source = this.audioContext.createBufferSource();
+                        source.buffer = clip.buffer;
+                        source.connect(this.audioContext.destination);
+                        source.start(this.audioContext.currentTime + clip.startTime);
+                    });
+                    
+                    this.updateTimelineButtons();
+                } catch (error) {
+                    this.showError(`タイムライン再生に失敗しました: ${error.message}`);
+                }
+            }
+
+            stopTimeline() {
+                this.updateTimelineButtons();
+            }
+
+            async renderTimeline() {
+                if (this.timelineClips.length === 0) return;
+                
                 try {
                     this.showLoading(true);
                     
-                    const length = this.audioBuffer.length;
-                    const buffer = new ArrayBuffer(44 + length * 2);
-                    const view = new DataView(buffer);
+                    const totalDuration = this.getTimelineEndTime();
+                    const sampleRate = this.timelineClips[0].buffer.sampleRate;
+                    const totalSamples = Math.ceil(totalDuration * sampleRate);
                     
-                    // WAV ヘッダーの書き込み
-                    const writeString = (offset, string) => {
-                        for (let i = 0; i < string.length; i++) {
-                            view.setUint8(offset + i, string.charCodeAt(i));
+                    const renderedBuffer = this.audioContext.createBuffer(2, totalSamples, sampleRate);
+                    
+                    this.timelineClips.forEach(clip => {
+                        const startSample = Math.floor(clip.startTime * sampleRate);
+                        
+                        for (let channel = 0; channel < Math.min(renderedBuffer.numberOfChannels, clip.buffer.numberOfChannels); channel++) {
+                            const renderedData = renderedBuffer.getChannelData(channel);
+                            const sourceData = clip.buffer.getChannelData(channel);
+                            
+                            for (let i = 0; i < sourceData.length && startSample + i < totalSamples; i++) {
+                                renderedData[startSample + i] += sourceData[i];
+                            }
                         }
+                    });
+                    
+                    const renderedTrack = {
+                        id: Date.now() + Math.floor(Math.random() * 10000),
+                        name: `timeline_rendered_${new Date().toLocaleTimeString()}`,
+                        buffer: renderedBuffer,
+                        duration: renderedBuffer.duration,
+                        sampleRate: renderedBuffer.sampleRate,
+                        channels: renderedBuffer.numberOfChannels
                     };
                     
-                    writeString(0, 'RIFF');
-                    view.setUint32(4, 36 + length * 2, true);
-                    writeString(8, 'WAVE');
-                    writeString(12, 'fmt ');
-                    view.setUint32(16, 16, true);
-                    view.setUint16(20, 1, true);
-                    view.setUint16(22, 1, true);
-                    view.setUint32(24, this.audioBuffer.sampleRate, true);
-                    view.setUint32(28, this.audioBuffer.sampleRate * 2, true);
-                    view.setUint16(32, 2, true);
-                    view.setUint16(34, 16, true);
-                    writeString(36, 'data');
-                    view.setUint32(40, length * 2, true);
+                    this.tracks.push(renderedTrack);
+                    this.updateTrackList();
+                    this.selectTrack(renderedTrack);
                     
-                    // オーディオデータの書き込み
-                    const channelData = this.audioBuffer.getChannelData(0);
-                    let offset = 44;
-                    for (let i = 0; i < length; i++) {
-                        const sample = Math.max(-1, Math.min(1, channelData[i]));
-                        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-                        offset += 2;
-                    }
-                    
-                    const blob = new Blob([buffer], { type: 'audio/wav' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${this.currentFile.name}_edited.wav`;
-                    a.click();
-                    
-                    URL.revokeObjectURL(url);
+                    this.saveState('タイムラインをレンダリング');
                     this.showLoading(false);
-                    this.showSuccess('ファイルをダウンロードしました');
+                    this.showSuccess('タイムラインをレンダリングしました');
                 } catch (error) {
-                    this.showError(`ダウンロードに失敗しました: ${error.message}`);
+                    this.showError(`レンダリングに失敗しました: ${error.message}`);
                     this.showLoading(false);
                 }
             }
@@ -1383,19 +2161,122 @@
                 const hasAudio = !!this.audioBuffer;
                 const hasSelection = this.selection.start !== null && this.selection.end !== null;
                 
-                document.getElementById('playBtn').disabled = !hasAudio || this.isPlaying;
+                document.getElementById('playSelectionBtn').disabled = !hasAudio || !hasSelection || this.isPlaying;
+                document.getElementById('playFullBtn').disabled = !hasAudio || this.isPlaying;
                 document.getElementById('stopBtn').disabled = !hasAudio || !this.isPlaying;
+                document.getElementById('loopBtn').disabled = !hasAudio;
                 document.getElementById('trimBtn').disabled = !hasAudio || !hasSelection;
+                document.getElementById('deleteBtn').disabled = !hasAudio || !hasSelection;
                 document.getElementById('clearBtn').disabled = !hasAudio || !hasSelection;
-                document.getElementById('downloadBtn').disabled = !hasAudio;
                 
-                document.getElementById('playBtn').textContent = this.isPlaying ? '⏸️ 一時停止' : '▶️ 再生';
+                // ボタンテキストの更新
+                const playSelectionBtn = document.getElementById('playSelectionBtn');
+                const playFullBtn = document.getElementById('playFullBtn');
+                
+                if (this.isPlaying) {
+                    if (this.playbackType === 'selection') {
+                        playSelectionBtn.textContent = '⏸️ 選択範囲再生中';
+                        playFullBtn.textContent = '▶️ 全体再生';
+                    } else {
+                        playSelectionBtn.textContent = '▶️ 選択範囲再生';
+                        playFullBtn.textContent = '⏸️ 全体再生中';
+                    }
+                } else {
+                    playSelectionBtn.textContent = '▶️ 選択範囲再生';
+                    playFullBtn.textContent = '▶️ 全体再生';
+                }
+            }
+
+            updateTimelineButtons() {
+                const hasClips = this.timelineClips.length > 0;
+                
+                document.getElementById('timelinePlayBtn').disabled = !hasClips;
+                document.getElementById('timelineStopBtn').disabled = !hasClips;
+                document.getElementById('renderTimelineBtn').disabled = !hasClips;
+            }
+
+            async finalOutput() {
+                if (!this.currentFile) {
+                    this.showError('出力するファイルを選択してください');
+                    return;
+                }
+
+                try {
+                    this.showLoading(true);
+                    
+                    const format = document.querySelector('input[name="outputFormat"]:checked').value;
+                    
+                    if (format === 'wav') {
+                        await this.exportAsWAV();
+                    } else if (format === 'mp3') {
+                        await this.exportAsMP3();
+                    }
+                    
+                    this.showLoading(false);
+                } catch (error) {
+                    this.showError(`出力に失敗しました: ${error.message}`);
+                    this.showLoading(false);
+                }
+            }
+
+            async exportAsWAV() {
+                const length = this.audioBuffer.length;
+                const buffer = new ArrayBuffer(44 + length * 2);
+                const view = new DataView(buffer);
+                
+                // WAV ヘッダーの書き込み
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + length * 2, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, this.audioBuffer.sampleRate, true);
+                view.setUint32(28, this.audioBuffer.sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeString(36, 'data');
+                view.setUint32(40, length * 2, true);
+                
+                // オーディオデータの書き込み
+                const channelData = this.audioBuffer.getChannelData(0);
+                let offset = 44;
+                for (let i = 0; i < length; i++) {
+                    const sample = Math.max(-1, Math.min(1, channelData[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+                
+                const blob = new Blob([buffer], { type: 'audio/wav' });
+                this.downloadFile(blob, `${this.currentFile.name}_edited.wav`);
+                this.showSuccess('WAVファイルを出力しました');
+            }
+
+            async exportAsMP3() {
+                this.showError('MP3出力機能は現在開発中です。WAV形式をご利用ください。');
+            }
+
+            downloadFile(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
             }
 
             formatTime(seconds) {
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
+                const ms = Math.floor((seconds % 1) * 100);
+                return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
             }
 
             showLoading(show) {
@@ -1411,20 +2292,8 @@
             }
 
             showSuccess(message) {
-                // 成功メッセージを表示する簡単な実装
                 const successDiv = document.createElement('div');
-                successDiv.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: linear-gradient(45deg, #4ecdc4, #44a08d);
-                    color: white;
-                    padding: 15px 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-                    z-index: 1000;
-                    font-weight: bold;
-                `;
+                successDiv.className = 'success';
                 successDiv.textContent = message;
                 document.body.appendChild(successDiv);
                 
@@ -1442,7 +2311,7 @@
         let editor;
         
         window.addEventListener('load', () => {
-            editor = new AudioEditor();
+            editor = new ProfessionalAudioEditorWithZoom();
         });
 
         // ユーザーの操作でAudioContextを有効化
